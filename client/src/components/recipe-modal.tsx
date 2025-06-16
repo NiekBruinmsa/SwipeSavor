@@ -133,7 +133,7 @@ export function RecipeModal({ isOpen, onClose, foodItem }: RecipeModalProps) {
                 </div>
               )}
 
-              <Button className="w-full bg-app-primary hover:bg-app-primary/90 text-white font-semibold py-3 px-6 rounded-full mb-4">
+              <Button className="w-full bg-app-primary hover:bg-app-primary/90 text-black font-bold py-4 px-6 rounded-2xl text-lg mb-6">
                 {foodItem.category === "cooking" && "Add to Shopping List"}
                 {foodItem.category === "delivery" && "View Menu"}
                 {foodItem.category === "dineout" && "Get Directions"}
