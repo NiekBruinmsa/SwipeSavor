@@ -99,7 +99,7 @@ export default function Swipe() {
       setUserSwipes(prev => [...prev, variables.foodItemId]);
       
       if (data.match) {
-        const item = foodItems.find(item => item.id === variables.foodItemId);
+        const item = foodItems.find((item: FoodItem) => item.id === variables.foodItemId);
         if (item) {
           setMatchedItem(item);
           setShowMatchModal(true);
@@ -126,7 +126,7 @@ export default function Swipe() {
   }, [currentSession, createSessionMutation]);
 
   // Get available cards (not yet swiped on)
-  const availableCards = foodItems.filter(item => !userSwipes.includes(item.id));
+  const availableCards = foodItems.filter((item: FoodItem) => !userSwipes.includes(item.id));
   const currentCard = availableCards[0]; // Always show the first available card
 
   const handleSwipeLeft = useCallback(() => {
@@ -224,10 +224,10 @@ export default function Swipe() {
       <div className="max-w-sm mx-auto p-4 relative" style={{ height: "600px" }}>
         <div className="relative w-full h-full">
           {/* Background cards */}
-          {availableCards.slice(1, 3).map((_, index) => (
+          {availableCards.slice(1, 3).map((_: FoodItem, index: number) => (
             <div
               key={`bg-card-${index}`}
-              className={`absolute inset-0 bg-white rounded-2xl shadow-lg ${
+              className={`absolute inset-0 bg-white rounded-3xl shadow-lg ${
                 index === 0 ? "scale-97 opacity-80 z-2" : "scale-95 opacity-60 z-1"
               }`}
             />
@@ -252,46 +252,46 @@ export default function Swipe() {
           <Button
             onClick={handleSwipeLeft}
             disabled={swipeMutation.isPending}
-            className="w-16 h-16 bg-white rounded-full shadow-lg text-app-reject text-2xl hover:bg-red-50 border border-gray-200"
+            className="w-16 h-16 bg-white rounded-full shadow-xl text-red-500 text-2xl hover:bg-red-50 border-2 border-gray-100"
             variant="outline"
           >
-            <X className="w-6 h-6" />
+            <X className="w-7 h-7" />
           </Button>
 
           <Button
             onClick={handleInfo}
-            className="w-12 h-12 bg-white rounded-full shadow-lg text-blue-500 text-lg hover:bg-blue-50 border border-gray-200"
+            className="w-12 h-12 bg-white rounded-full shadow-xl text-gray-600 text-lg hover:bg-gray-50 border-2 border-gray-100"
             variant="outline"
           >
-            <Info className="w-4 h-4" />
+            <Info className="w-5 h-5" />
           </Button>
 
           <Button
             onClick={handleSwipeRight}
             disabled={swipeMutation.isPending}
-            className="w-16 h-16 bg-white rounded-full shadow-lg text-app-success text-2xl hover:bg-green-50 border border-gray-200"
+            className="w-16 h-16 bg-white rounded-full shadow-xl text-green-500 text-2xl hover:bg-green-50 border-2 border-gray-100"
             variant="outline"
           >
-            <Heart className="w-6 h-6" />
+            <Heart className="w-7 h-7" />
           </Button>
         </div>
       </div>
 
       {/* Status Bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4">
+      <div className="fixed bottom-0 left-0 right-0 bg-app-primary border-t border-black/10 p-4">
         <div className="max-w-sm mx-auto">
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-app-primary rounded-full flex items-center justify-center text-white text-xs">
+              <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center text-white text-xs font-bold">
                 A
               </div>
-              <span>Alex</span>
-              <span className="text-gray-400">liked {userSwipes.filter(Boolean).length}</span>
+              <span className="font-medium text-black">Alex</span>
+              <span className="text-black/60">liked {userSwipes.filter(Boolean).length}</span>
             </div>
             <div className="flex items-center space-x-2">
-              <span className="text-gray-400">liked {Math.floor(userSwipes.length * 0.7)}</span>
-              <span>Sam</span>
-              <div className="w-8 h-8 bg-app-secondary rounded-full flex items-center justify-center text-white text-xs">
+              <span className="text-black/60">liked {Math.floor(userSwipes.length * 0.7)}</span>
+              <span className="font-medium text-black">Sam</span>
+              <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center text-white text-xs font-bold">
                 S
               </div>
             </div>

@@ -21,38 +21,43 @@ export function RecipeModal({ isOpen, onClose, foodItem }: RecipeModalProps) {
           transition={{ duration: 0.3 }}
         >
           <motion.div
-            className="bg-white rounded-t-3xl w-full max-w-sm h-3/4 overflow-y-auto"
+            className="bg-white rounded-t-3xl w-full max-w-sm h-3/4 overflow-y-auto shadow-2xl"
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ duration: 0.3, ease: "easeOut" }}
           >
-            <div className="p-4 border-b border-gray-200 flex items-center justify-between sticky top-0 bg-white z-10">
-              <h3 className="text-lg font-semibold">
+            <div className="p-6 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white z-10">
+              <h3 className="text-xl font-bold text-black">
                 {foodItem.category === "cooking" && "Recipe Details"}
                 {foodItem.category === "delivery" && "Restaurant Details"}
                 {foodItem.category === "dineout" && "Restaurant Info"}
               </h3>
               <button
                 onClick={onClose}
-                className="p-2 text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                className="p-2 text-gray-500 hover:bg-gray-100 rounded-full transition-colors"
               >
-                <X className="w-5 h-5" />
+                <X className="w-6 h-6" />
               </button>
             </div>
 
-            <div className="p-4">
+            <div className="p-6">
               <img
                 src={foodItem.image}
                 alt={foodItem.name}
-                className="w-full h-48 object-cover rounded-xl mb-4"
+                className="w-full h-52 object-cover rounded-2xl mb-6"
               />
 
-              <h3 className="text-xl font-bold app-neutral mb-2">
-                {foodItem.name}
-              </h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-2xl font-bold text-black">
+                  {foodItem.name}
+                </h3>
+                {foodItem.price && (
+                  <span className="text-xl font-bold text-app-primary">{foodItem.price}</span>
+                )}
+              </div>
 
-              <div className="flex items-center space-x-4 mb-4 text-sm text-gray-600">
+              <div className="flex items-center space-x-6 mb-4 text-sm text-gray-500">
                 {foodItem.cookTime && (
                   <div className="flex items-center space-x-1">
                     <Clock className="w-4 h-4" />
@@ -79,13 +84,13 @@ export function RecipeModal({ isOpen, onClose, foodItem }: RecipeModalProps) {
                 )}
               </div>
 
-              <p className="text-gray-600 mb-4">{foodItem.description}</p>
+              <p className="text-gray-500 mb-6 leading-relaxed">{foodItem.description}</p>
 
-              <div className="flex flex-wrap gap-2 mb-4">
+              <div className="flex flex-wrap gap-2 mb-6">
                 {foodItem.tags.map((tag) => (
                   <span
                     key={tag}
-                    className="px-3 py-1 bg-orange-100 text-orange-600 text-sm rounded-full"
+                    className="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded-full font-medium"
                   >
                     {tag}
                   </span>

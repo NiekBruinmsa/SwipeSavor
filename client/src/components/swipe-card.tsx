@@ -94,48 +94,60 @@ export function SwipeCard({
         <img
           src={foodItem.image}
           alt={foodItem.name}
-          className="w-full h-2/3 object-cover rounded-t-2xl"
+          className="w-full h-3/5 object-cover rounded-t-3xl"
           draggable={false}
         />
 
-        <div className="p-4 h-1/3 flex flex-col justify-between">
+        <div className="p-6 h-2/5 flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-xl font-bold app-neutral truncate">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-2xl font-bold text-black truncate">
                 {foodItem.name}
               </h3>
-              <div className="flex items-center space-x-1 flex-shrink-0">
-                {timeInfo && (
-                  <>
-                    {foodItem.category === "cooking" && <Clock className="w-4 h-4 text-gray-400" />}
-                    {foodItem.category === "delivery" && <Zap className="w-4 h-4 text-gray-400" />}
-                    {foodItem.category === "dineout" && <MapPin className="w-4 h-4 text-gray-400" />}
-                    <span className="text-sm text-gray-600">{timeInfo}</span>
-                  </>
-                )}
-              </div>
+              {foodItem.price && (
+                <div className="flex-shrink-0">
+                  <span className="text-xl font-bold text-app-primary">{foodItem.price}</span>
+                </div>
+              )}
             </div>
 
-            <p className="text-gray-600 text-sm mb-3 line-clamp-2">
+            <p className="text-gray-500 text-sm mb-4 line-clamp-2">
               {foodItem.description}
             </p>
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4 text-sm text-gray-500">
+                {timeInfo && (
+                  <div className="flex items-center space-x-1">
+                    {foodItem.category === "cooking" && <Clock className="w-4 h-4" />}
+                    {foodItem.category === "delivery" && <Zap className="w-4 h-4" />}
+                    {foodItem.category === "dineout" && <MapPin className="w-4 h-4" />}
+                    <span>{timeInfo}</span>
+                  </div>
+                )}
+                {(foodItem.servings || foodItem.calories) && (
+                  <div className="flex items-center space-x-1">
+                    <Users className="w-4 h-4" />
+                    <span>{foodItem.servings || foodItem.calories}</span>
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center space-x-1">
+                <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                <span className="text-sm font-medium text-black">{foodItem.rating}</span>
+              </div>
+            </div>
           </div>
 
-          <div className="flex items-center justify-between">
-            <div className="flex space-x-2 flex-wrap">
-              {foodItem.tags.slice(0, 2).map((tag) => (
-                <span
-                  key={tag}
-                  className="px-2 py-1 bg-orange-100 text-orange-600 text-xs rounded-full"
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-            <div className="flex items-center space-x-1">
-              <Star className="w-4 h-4 text-app-accent fill-current" />
-              <span className="text-sm font-medium">{foodItem.rating}</span>
-            </div>
+          <div className="flex space-x-2 mt-4">
+            {foodItem.tags.slice(0, 3).map((tag) => (
+              <span
+                key={tag}
+                className="px-3 py-1 bg-gray-100 text-gray-700 text-xs rounded-full font-medium"
+              >
+                {tag}
+              </span>
+            ))}
           </div>
         </div>
 
@@ -145,7 +157,7 @@ export function SwipeCard({
             e.stopPropagation();
             onInfo();
           }}
-          className="absolute bottom-4 right-4 w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-blue-600 transition-colors z-30"
+          className="absolute bottom-6 right-6 w-10 h-10 bg-black text-white rounded-full flex items-center justify-center text-sm hover:bg-gray-800 transition-colors z-30 shadow-lg"
         >
           i
         </button>
