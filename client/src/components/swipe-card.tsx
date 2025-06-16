@@ -65,7 +65,7 @@ export function SwipeCard({
   return (
     <motion.div
       ref={elementRef}
-      className={`absolute inset-0 bg-white rounded-2xl shadow-xl cursor-grab active:cursor-grabbing select-none ${className}`}
+      className={`absolute inset-0 bg-white rounded-3xl shadow-2xl cursor-grab active:cursor-grabbing select-none ${className}`}
       style={cardStyle}
       {...gestures}
       initial={{ scale: 0.95, opacity: 0 }}
@@ -74,7 +74,7 @@ export function SwipeCard({
     >
       {/* Swipe overlay */}
       <div
-        className="absolute inset-0 rounded-2xl pointer-events-none z-10"
+        className="absolute inset-0 rounded-3xl pointer-events-none z-10"
         style={{ backgroundColor: overlayColor }}
       />
       

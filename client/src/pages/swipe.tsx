@@ -196,24 +196,25 @@ export default function Swipe() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 relative overflow-hidden">
+    <div className="min-h-screen bg-app-primary relative overflow-hidden">
       {/* Header */}
-      <div className="bg-white shadow-sm p-4 relative z-10">
+      <div className="bg-app-primary p-4 relative z-10">
         <div className="max-w-sm mx-auto flex items-center justify-between">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => setLocation("/categories")}
+            className="app-text hover:bg-black/10"
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div className="text-center">
-            <h3 className="font-semibold app-neutral">
+            <h3 className="font-bold app-text text-lg">
               {categoryTitles[currentCategory as keyof typeof categoryTitles]}
             </h3>
-            <p className="text-sm text-gray-600">Swipe right to like!</p>
+            <p className="text-sm app-text-muted">Swipe right to like!</p>
           </div>
-          <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="icon" className="app-text hover:bg-black/10">
             <Sliders className="w-5 h-5" />
           </Button>
         </div>

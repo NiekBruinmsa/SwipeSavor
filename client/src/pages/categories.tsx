@@ -56,7 +56,7 @@ export default function Categories() {
   ];
 
   return (
-    <div className="min-h-screen bg-white p-4">
+    <div className="min-h-screen bg-app-primary p-4">
       <div className="max-w-sm mx-auto pt-8">
         <motion.div
           className="flex items-center mb-6"
@@ -68,13 +68,13 @@ export default function Categories() {
             variant="ghost"
             size="icon"
             onClick={() => setLocation("/")}
-            className="mr-3"
+            className="mr-3 app-text hover:bg-black/10"
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div className="text-center flex-1">
-            <h2 className="text-2xl font-bold app-neutral">What's the vibe tonight?</h2>
-            <p className="text-gray-600">Choose your dining adventure</p>
+            <h2 className="text-2xl font-bold app-text">What's the vibe tonight?</h2>
+            <p className="app-text-muted">Choose your dining adventure</p>
           </div>
         </motion.div>
 
@@ -95,14 +95,14 @@ export default function Categories() {
               >
                 <Button
                   onClick={() => handleCategorySelect(category.id)}
-                  className={`w-full bg-gradient-to-r ${category.gradient} text-white p-6 rounded-2xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 h-auto`}
+                  className="w-full bg-white text-black p-6 rounded-2xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 h-auto border-2 border-gray-100"
                 >
                   <div className="flex items-center justify-between w-full">
                     <div className="text-left">
-                      <h3 className="text-xl font-semibold mb-1">{category.title}</h3>
-                      <p className="text-sm opacity-90">{category.description}</p>
+                      <h3 className="text-xl font-bold mb-1">{category.title}</h3>
+                      <p className="text-sm text-gray-600">{category.description}</p>
                     </div>
-                    <Icon className="w-8 h-8" />
+                    <Icon className="w-8 h-8 text-gray-700" />
                   </div>
                 </Button>
               </motion.div>
@@ -111,12 +111,12 @@ export default function Categories() {
         </motion.div>
 
         <motion.div
-          className="bg-gray-50 p-4 rounded-xl"
+          className="bg-white/50 p-4 rounded-2xl"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6, duration: 0.4 }}
         >
-          <h4 className="font-semibold app-neutral mb-3">Quick Filters</h4>
+          <h4 className="font-bold app-text mb-3">Quick Filters</h4>
           <div className="flex flex-wrap gap-2">
             {filters.map((filter) => (
               <Button
@@ -126,8 +126,8 @@ export default function Categories() {
                 onClick={() => handleFilterToggle(filter.id)}
                 className={`px-3 py-1 rounded-full text-sm transition-all duration-200 ${
                   selectedFilters.includes(filter.id)
-                    ? "bg-app-primary text-white border-app-primary"
-                    : "bg-white border-gray-200 text-gray-700 hover:bg-gray-100"
+                    ? "bg-black text-white border-black"
+                    : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
                 }`}
               >
                 {filter.label}
