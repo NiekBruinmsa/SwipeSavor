@@ -9,8 +9,65 @@ import {
   type SwipeSession 
 } from "@shared/schema";
 import { z } from "zod";
+import Database from "@replit/database";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  
+  // Initialize @replit/database
+  const db = new Database();
+
+  // POST /swipe endpoint
+  app.post("/swipe", async (req, res) => {
+    try {
+      const { room, userId, mealId, liked } = req.body;
+      
+      // Validate required fields
+      if (!room || !userId || !mealId || typeof liked !== 'boolean') {
+        return res.status(400).json({ 
+          error: 'Missing required fields: room, userId, mealId, liked' 
+        });
+      }
+      
+      // Store swipe using the specified key pattern
+      const swipeKey = `swipes/${room}/${userId}/${mealId}`;
+      await db.set(swipeKey, { liked, timestamp: Date.now() });
+      
+      // Check for matches if this is a positive swipe
+      if (liked) {
+        await checkAndCreateMatchInRoom(db, room, mealId, userId);
+      }
+      
+      res.json({ success: true, message: 'Swipe recorded' });
+    } catch (error) {
+      console.error('Error recording swipe:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
+  // GET /matches/:room/:userId endpoint
+  app.get("/matches/:room/:userId", async (req, res) => {
+    try {
+      const { room, userId } = req.params;
+      
+      // Get all matches for this room
+      const matchesKey = `matches/${room}`;
+      const matchesResult = await db.get(matchesKey);
+      const matches = Array.isArray(matchesResult) ? matchesResult : [];
+      
+      // Filter matches that include this user
+      const userMatches = matches.filter((match: any) => 
+        match.users && match.users.includes(userId)
+      );
+      
+      // Extract meal IDs
+      const mealIds = userMatches.map((match: any) => match.mealId);
+      
+      res.json({ mealIds });
+    } catch (error) {
+      console.error('Error getting matches:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
   
   // User routes
   app.post("/api/users", async (req, res) => {
@@ -221,4 +278,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   const httpServer = createServer(app);
   return httpServer;
+}
+
+// Helper function to check for matches in @replit/database
+async function checkAndCreateMatchInRoom(db: any, room: string, mealId: string, currentUserId: string) {
+  try {
+    // Check for specific swipes for this meal by trying both user patterns
+    const likedUsers: string[] = [];
+    
+    // Check common user patterns for matches
+    const possibleUserIds = ['user1', 'user2', 'user3', 'user4'];
+    
+    for (const userId of possibleUserIds) {
+      const swipeKey = `swipes/${room}/${userId}/${mealId}`;
+      try {
+        const swipeData = await db.get(swipeKey);
+        if (swipeData && swipeData.liked) {
+          likedUsers.push(userId);
+        }
+      } catch (err) {
+        // Key doesn't exist, continue
+      }
+    }
+    
+    // If 2 or more users liked this meal, create a match
+    if (likedUsers.length >= 2) {
+      const matchesKey = `matches/${room}`;
+      const existingMatchesResult = await db.get(matchesKey);
+      const existingMatches = Array.isArray(existingMatchesResult) ? existingMatchesResult : [];
+      
+      // Check if match already exists
+      const matchExists = existingMatches.some((match: any) => 
+        match.mealId === mealId && 
+        match.users.sort().join(',') === likedUsers.sort().join(',')
+      );
+      
+      if (!matchExists) {
+        const newMatch = {
+          mealId,
+          users: likedUsers,
+          timestamp: Date.now()
+        };
+        
+        existingMatches.push(newMatch);
+        await db.set(matchesKey, existingMatches);
+        
+        console.log(`Match created in room ${room} for meal ${mealId}:`, likedUsers);
+      }
+    }
+  } catch (error) {
+    console.error('Error checking for matches:', error);
+  }
 }
