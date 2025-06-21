@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Demo</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        button { margin: 10px; padding: 10px 20px; background: #FFD700; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #FFC000; }
+        .result { background: #f5f5f5; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .input-group { margin: 10px 0; }
+        input { padding: 8px; margin: 5px; border: 1px solid #ccc; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <h1>Swipe API Demo</h1>
+    
+    <div class="input-group">
+        <input type="text" id="room" placeholder="Room ID" value="demo-room">
+        <input type="text" id="userId" placeholder="User ID" value="user1">
+        <input type="text" id="mealId" placeholder="Meal ID" value="pizza">
+    </div>
+    
+    <button onclick="testSaveSwipe(true)">Like Meal</button>
+    <button onclick="testSaveSwipe(false)">Dislike Meal</button>
+    <button onclick="testGetMatches()">Get Matches</button>
+    
+    <div id="results"></div>
+
+    <script type="module">
+        import { saveSwipe, getMatches } from './api.js';
+        
+        window.testSaveSwipe = async function(liked) {
+            const room = document.getElementById('room').value;
+            const userId = document.getElementById('userId').value;
+            const mealId = document.getElementById('mealId').value;
+            
+            try {
+                const result = await saveSwipe(room, userId, mealId, liked);
+                showResult(`Swipe saved: ${JSON.stringify(result, null, 2)}`);
+            } catch (error) {
+                showResult(`Error: ${error.message}`);
+            }
+        };
+        
+        window.testGetMatches = async function() {
+            const room = document.getElementById('room').value;
+            const userId = document.getElementById('userId').value;
+            
+            try {
+                const result = await getMatches(room, userId);
+                showResult(`Matches: ${JSON.stringify(result, null, 2)}`);
+            } catch (error) {
+                showResult(`Error: ${error.message}`);
+            }
+        };
+        
+        function showResult(message) {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = 'result';
+            div.innerHTML = `<pre>${message}</pre>`;
+            results.insertBefore(div, results.firstChild);
+        }
+    </script>
+</body>
+</html>
