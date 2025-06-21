@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import { WebSocketServer } from "ws";
 import { storage } from "./storage";
 import { 
   insertUserSchema, 
@@ -34,7 +35,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Check for matches if this is a positive swipe
       if (liked) {
-        await checkAndCreateMatchInRoom(db, room, mealId, userId);
+        const matchResult = await checkAndCreateMatchInRoom(db, room, mealId, userId);
+        if (matchResult.isMatch) {
+          // Send real-time match notification to both users via WebSocket
+          console.log('Match found, notifying users:', matchResult.users);
+        }
       }
       
       res.json({ success: true, message: 'Swipe recorded' });
@@ -249,6 +254,101 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // User login endpoint
+  app.post("/api/login", async (req, res) => {
+    try {
+      const { username, password } = req.body;
+      
+      if (!username || !password) {
+        return res.status(400).json({ message: "Username and password required" });
+      }
+      
+      const user = await storage.getUserByUsername(username);
+      if (!user || user.password !== password) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+      
+      res.json({ 
+        user: { 
+          id: user.id, 
+          username: user.username, 
+          displayName: user.displayName, 
+          avatar: user.avatar 
+        } 
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Error logging in", error });
+    }
+  });
+
+  // User registration endpoint
+  app.post("/api/register", async (req, res) => {
+    try {
+      const { username, password, displayName } = req.body;
+      
+      if (!username || !password || !displayName) {
+        return res.status(400).json({ message: "Username, password, and display name required" });
+      }
+      
+      // Check if user already exists
+      const existingUser = await storage.getUserByUsername(username);
+      if (existingUser) {
+        return res.status(409).json({ message: "Username already exists" });
+      }
+      
+      const user = await storage.createUser({
+        username,
+        password,
+        displayName,
+        avatar: displayName.charAt(0).toUpperCase()
+      });
+      
+      res.json({ 
+        user: { 
+          id: user.id, 
+          username: user.username, 
+          displayName: user.displayName, 
+          avatar: user.avatar 
+        } 
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Error creating user", error });
+    }
+  });
+
+  // Join session with another user
+  app.post("/api/join-session", async (req, res) => {
+    try {
+      const { userId, partnerUsername, category } = req.body;
+      
+      if (!userId || !partnerUsername || !category) {
+        return res.status(400).json({ message: "userId, partnerUsername, and category required" });
+      }
+      
+      const partner = await storage.getUserByUsername(partnerUsername);
+      if (!partner) {
+        return res.status(404).json({ message: "Partner not found" });
+      }
+      
+      // Check if session already exists
+      let session = await storage.getActiveSession(userId, partner.id, category);
+      
+      if (!session) {
+        // Create new session
+        session = await storage.createSwipeSession({
+          userId1: userId,
+          userId2: partner.id,
+          category,
+          filters: []
+        });
+      }
+      
+      res.json({ session, partner: { id: partner.id, displayName: partner.displayName, avatar: partner.avatar } });
+    } catch (error) {
+      res.status(500).json({ message: "Error joining session", error });
+    }
+  });
+
   // Demo users endpoint for quick setup
   app.post("/api/demo-users", async (req, res) => {
     try {
@@ -266,10 +366,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         avatar: "S"
       });
       
-      // Set them as partners
-      await storage.updateUserPartner(user1.id, user2.id);
-      await storage.updateUserPartner(user2.id, user1.id);
-      
       res.json({ user1, user2 });
     } catch (error) {
       res.status(500).json({ message: "Error creating demo users", error });
@@ -277,6 +373,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   const httpServer = createServer(app);
+  
+  // Setup WebSocket server for real-time communication
+  const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
+  
+  // Store active connections by user ID
+  const connections = new Map();
+  
+  wss.on('connection', (ws: any, request) => {
+    console.log('WebSocket connection established');
+    
+    ws.on('message', async (message) => {
+      try {
+        const data = JSON.parse(message.toString());
+        
+        switch (data.type) {
+          case 'join':
+            // User joins and identifies themselves
+            connections.set(data.userId, ws);
+            ws.userId = data.userId;
+            ws.sessionId = data.sessionId;
+            
+            // Notify partner that user is online
+            if (data.sessionId) {
+              const session = await storage.getSwipeSession(data.sessionId);
+              if (session) {
+                const partnerId = session.userId1 === data.userId ? session.userId2 : session.userId1;
+                const partnerWs = connections.get(partnerId);
+                if (partnerWs && partnerWs.readyState === 1) {
+                  partnerWs.send(JSON.stringify({
+                    type: 'partner_online',
+                    userId: data.userId
+                  }));
+                }
+              }
+            }
+            break;
+            
+          case 'swipe':
+            // Handle real-time swipe updates
+            if (ws.sessionId) {
+              const session = await storage.getSwipeSession(ws.sessionId);
+              if (session) {
+                const partnerId = session.userId1 === ws.userId ? session.userId2 : session.userId1;
+                const partnerWs = connections.get(partnerId);
+                if (partnerWs && partnerWs.readyState === 1) {
+                  partnerWs.send(JSON.stringify({
+                    type: 'partner_swipe',
+                    foodItemId: data.foodItemId,
+                    liked: data.liked
+                  }));
+                }
+              }
+            }
+            break;
+        }
+      } catch (error) {
+        console.error('WebSocket message error:', error);
+      }
+    });
+    
+    ws.on('close', () => {
+      if (ws.userId) {
+        connections.delete(ws.userId);
+        
+        // Notify partner that user went offline
+        if (ws.sessionId) {
+          storage.getSwipeSession(ws.sessionId).then(session => {
+            if (session) {
+              const partnerId = session.userId1 === ws.userId ? session.userId2 : session.userId1;
+              const partnerWs = connections.get(partnerId);
+              if (partnerWs && partnerWs.readyState === 1) {
+                partnerWs.send(JSON.stringify({
+                  type: 'partner_offline',
+                  userId: ws.userId
+                }));
+              }
+            }
+          });
+        }
+      }
+    });
+  });
+  
+  // Add WebSocket reference to server for match notifications
+  httpServer.wss = wss;
+  httpServer.connections = connections;
+  
   return httpServer;
 }
 
@@ -324,9 +507,14 @@ async function checkAndCreateMatchInRoom(db: any, room: string, mealId: string, 
         await db.set(matchesKey, existingMatches);
         
         console.log(`Match created in room ${room} for meal ${mealId}:`, likedUsers);
+        
+        return { isMatch: true, users: likedUsers };
       }
     }
+    
+    return { isMatch: false, users: [] };
   } catch (error) {
     console.error('Error checking for matches:', error);
+    return { isMatch: false, users: [] };
   }
 }
