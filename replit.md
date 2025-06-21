@@ -19,9 +19,10 @@ A Tinder-style swipe app for couples to decide on meals together, featuring cook
 - **Data Fetching**: TanStack Query for API communication
 
 ### Backend (Express + TypeScript)
-- **Storage**: In-memory storage with predefined food items
+- **Database**: PostgreSQL with Drizzle ORM for data persistence
+- **Storage**: Database-backed storage replacing previous in-memory system
 - **API**: RESTful endpoints for users, food items, sessions, and matches
-- **Demo Data**: Automatically creates demo users for testing
+- **Demo Data**: Automatically creates demo users and sample food items
 
 ### Key Features
 - **Onboarding**: Welcome screen with app explanation
@@ -38,6 +39,8 @@ A Tinder-style swipe app for couples to decide on meals together, featuring cook
 - Redesigned swipe cards with better typography and layout
 - Enhanced match and recipe modals with modern styling
 - Updated action buttons and status bar to match new theme
+- Added PostgreSQL database with Drizzle ORM for data persistence
+- Migrated from in-memory storage to database-backed storage system
 
 ## Technical Stack
 - **Runtime**: Node.js 20
