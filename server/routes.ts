@@ -17,10 +17,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize @replit/database
   const db = new Database();
 
-  // POST /swipe endpoint
-  app.post("/swipe", async (req, res) => {
+  // POST /api/swipes/:room endpoint
+  app.post("/api/swipes/:room", async (req, res) => {
+    const { room } = req.params;
     try {
-      const { room, userId, mealId, liked } = req.body;
+      const { userId, mealId, liked } = req.body;
       
       // Validate required fields
       if (!room || !userId || !mealId || typeof liked !== 'boolean') {
@@ -31,7 +32,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Store swipe using the specified key pattern
       const swipeKey = `swipes/${room}/${userId}/${mealId}`;
-      await db.set(swipeKey, { liked, timestamp: Date.now() });
+      const swipeData = { liked, timestamp: Date.now() };
+      await db.set(swipeKey, swipeData);
+      console.log(`Stored swipe: ${swipeKey} = ${JSON.stringify(swipeData)}`);
       
       // Check for matches if this is a positive swipe
       if (liked) {
@@ -64,15 +67,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // GET /matches/:room/:userId endpoint
-  app.get("/matches/:room/:userId", async (req, res) => {
+  // GET /api/matches/:room/:userId endpoint
+  app.get("/api/matches/:room/:userId", async (req, res) => {
     try {
       const { room, userId } = req.params;
       
       // Get all matches for this room
       const matchesKey = `matches/${room}`;
       const matchesResult = await db.get(matchesKey);
-      const matches = Array.isArray(matchesResult) ? matchesResult : [];
+      console.log(`Getting matches for ${matchesKey}: ${JSON.stringify(matchesResult)}`);
+      
+      // Handle @replit/database response format
+      let matches = [];
+      if (matchesResult?.ok && matchesResult?.value) {
+        matches = Array.isArray(matchesResult.value) ? matchesResult.value : [];
+      } else if (Array.isArray(matchesResult)) {
+        matches = matchesResult;
+      }
       
       // Filter matches that include this user
       const userMatches = matches.filter((match: any) => 
@@ -483,30 +494,35 @@ async function checkAndCreateMatchInRoom(db: any, room: string, mealId: string, 
   try {
     // Get all swipes for this meal in this room
     const likedUsers: string[] = [];
-    const swipePrefix = `swipes/${room}`;
     
-    // Get all keys that match the pattern
-    const allKeys = await db.list(swipePrefix);
+    // Get all swipes for this specific meal by checking both possible users
+    const possibleUserIds = ['user1', 'user2', 'user3', 'user4'];
     
-    for (const key of allKeys) {
-      if (key.includes(`/${mealId}`) && key.startsWith(swipePrefix)) {
-        try {
-          const swipeData = await db.get(key);
-          if (swipeData && swipeData.liked) {
-            // Extract userId from key: swipes/room/userId/mealId
-            const parts = key.split('/');
-            if (parts.length >= 3) {
-              const userId = parts[2];
-              likedUsers.push(userId);
-            }
+    for (const userId of possibleUserIds) {
+      const swipeKey = `swipes/${room}/${userId}/${mealId}`;
+      try {
+        const swipeResult = await db.get(swipeKey);
+        console.log(`Checking ${swipeKey}: ${JSON.stringify(swipeResult)}`);
+        
+        // Handle @replit/database response format
+        if (swipeResult?.ok && swipeResult?.value) {
+          const swipeData = swipeResult.value;
+          console.log(`Swipe data for ${userId}: liked=${swipeData.liked}, type=${typeof swipeData.liked}`);
+          if (swipeData.liked === true) {
+            likedUsers.push(userId);
+            console.log(`✅ Found like from ${userId} for meal ${mealId}`);
+          } else {
+            console.log(`❌ No like from ${userId} (liked=${swipeData.liked})`);
           }
-        } catch (err) {
-          // Key doesn't exist, continue
+        } else {
+          console.log(`No valid swipe found for ${swipeKey}`);
         }
+      } catch (err) {
+        console.log(`Error getting swipe for ${swipeKey}: ${err}`);
       }
     }
     
-    console.log(`Checking matches for ${mealId} in ${room}: ${likedUsers.length} likes`);
+    console.log(`Checking matches for ${mealId} in ${room}: ${likedUsers.length} likes from [${likedUsers.join(', ')}]`);
     
     // If 2 or more users liked this meal, create a match
     if (likedUsers.length >= 2) {

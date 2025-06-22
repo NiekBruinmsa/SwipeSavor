@@ -76,11 +76,10 @@ export default function Swipe() {
       const room = `session_${currentSession.id}`;
       const userId = `user${currentUser.id}`;
       
-      const response = await fetch("/swipe", {
+      const response = await fetch(`/api/swipes/${room}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          room,
           userId,
           mealId: variables.foodItemId.toString(),
           liked: variables.liked
@@ -95,7 +94,7 @@ export default function Swipe() {
       if (variables.liked && currentUser && currentSession) {
         try {
           const room = `session_${currentSession.id}`;
-          const matchResponse = await fetch(`/matches/${room}/user${currentUser.id}`);
+          const matchResponse = await fetch(`/api/matches/${room}/user${currentUser.id}`);
           if (matchResponse.ok) {
             const matchData = await matchResponse.json();
             if (matchData.mealIds && matchData.mealIds.length > 0) {
