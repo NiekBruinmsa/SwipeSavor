@@ -77,7 +77,6 @@ export function SwipeCard({
         className="absolute inset-0 rounded-3xl pointer-events-none z-10"
         style={{ backgroundColor: overlayColor }}
       />
-      
       {/* Swipe indicators */}
       {gestureState.deltaX > 50 && (
         <div className="absolute top-8 right-8 bg-app-success text-white px-4 py-2 rounded-full font-bold text-lg z-20 transform rotate-12">
@@ -89,12 +88,11 @@ export function SwipeCard({
           PASS
         </div>
       )}
-
       <div className="relative h-full">
         <img
           src={foodItem.image}
           alt={foodItem.name}
-          className="w-full h-3/5 object-cover rounded-t-3xl"
+          className="w-full h-3/5 object-cover rounded-t-3xl pt-[7px] pb-[7px]"
           draggable={false}
         />
 
