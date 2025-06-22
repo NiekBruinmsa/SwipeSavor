@@ -32,6 +32,17 @@ A Tinder-style swipe app for couples to decide on meals together, featuring cook
 - **Recipe Details**: Detailed modal with ingredients, instructions, and info
 
 ## Recent Changes
+*January 22, 2025*
+- Built complete multi-user real-time swipe system
+- Added user authentication with login/register functionality
+- Created session joining system for connecting partners by username
+- Implemented WebSocket server for real-time communication
+- Added match detection system using room-based API with @replit/database
+- Fixed React rendering issues and component structure
+- Currently debugging WebSocket connection issues and match notifications
+- Users can successfully register (Jesse/Niek) and join sessions together
+- Swipe functionality works but partner status shows offline and matches not detected yet
+
 *December 16, 2024*
 - Updated entire app design to match modern yellow food app aesthetic
 - Changed color scheme to vibrant yellow (#FFD700) with black text

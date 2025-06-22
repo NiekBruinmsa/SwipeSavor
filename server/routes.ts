@@ -37,8 +37,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (liked) {
         const matchResult = await checkAndCreateMatchInRoom(db, room, mealId, userId);
         if (matchResult.isMatch) {
-          // Send real-time match notification to both users via WebSocket
-          console.log('Match found, notifying users:', matchResult.users);
+          console.log('🎉 Match found, notifying users:', matchResult.users);
+          
+          // Send real-time match notification to all users via WebSocket
+          for (const matchedUserId of matchResult.users) {
+            const userWs = (httpServer as any).connections?.get(matchedUserId);
+            if (userWs && userWs.readyState === 1) {
+              userWs.send(JSON.stringify({
+                type: 'match_found',
+                mealId,
+                users: matchResult.users,
+                room
+              }));
+              console.log(`✅ Sent match notification to ${matchedUserId}`);
+            } else {
+              console.log(`❌ WebSocket not found for user ${matchedUserId}`);
+            }
+          }
         }
       }
       
@@ -457,8 +472,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Add WebSocket reference to server for match notifications
-  httpServer.wss = wss;
-  httpServer.connections = connections;
+  (httpServer as any).wss = wss;
+  (httpServer as any).connections = connections;
   
   return httpServer;
 }
@@ -466,23 +481,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
 // Helper function to check for matches in @replit/database
 async function checkAndCreateMatchInRoom(db: any, room: string, mealId: string, currentUserId: string) {
   try {
-    // Check for specific swipes for this meal by trying both user patterns
+    // Get all swipes for this meal in this room
     const likedUsers: string[] = [];
+    const swipePrefix = `swipes/${room}`;
     
-    // Check common user patterns for matches
-    const possibleUserIds = ['user1', 'user2', 'user3', 'user4'];
+    // Get all keys that match the pattern
+    const allKeys = await db.list(swipePrefix);
     
-    for (const userId of possibleUserIds) {
-      const swipeKey = `swipes/${room}/${userId}/${mealId}`;
-      try {
-        const swipeData = await db.get(swipeKey);
-        if (swipeData && swipeData.liked) {
-          likedUsers.push(userId);
+    for (const key of allKeys) {
+      if (key.includes(`/${mealId}`) && key.startsWith(swipePrefix)) {
+        try {
+          const swipeData = await db.get(key);
+          if (swipeData && swipeData.liked) {
+            // Extract userId from key: swipes/room/userId/mealId
+            const parts = key.split('/');
+            if (parts.length >= 3) {
+              const userId = parts[2];
+              likedUsers.push(userId);
+            }
+          }
+        } catch (err) {
+          // Key doesn't exist, continue
         }
-      } catch (err) {
-        // Key doesn't exist, continue
       }
     }
+    
+    console.log(`Checking matches for ${mealId} in ${room}: ${likedUsers.length} likes`);
     
     // If 2 or more users liked this meal, create a match
     if (likedUsers.length >= 2) {
@@ -492,8 +516,7 @@ async function checkAndCreateMatchInRoom(db: any, room: string, mealId: string, 
       
       // Check if match already exists
       const matchExists = existingMatches.some((match: any) => 
-        match.mealId === mealId && 
-        match.users.sort().join(',') === likedUsers.sort().join(',')
+        match.mealId === mealId
       );
       
       if (!matchExists) {
@@ -506,7 +529,7 @@ async function checkAndCreateMatchInRoom(db: any, room: string, mealId: string, 
         existingMatches.push(newMatch);
         await db.set(matchesKey, existingMatches);
         
-        console.log(`Match created in room ${room} for meal ${mealId}:`, likedUsers);
+        console.log(`🎉 MATCH CREATED in room ${room} for meal ${mealId}:`, likedUsers);
         
         return { isMatch: true, users: likedUsers };
       }

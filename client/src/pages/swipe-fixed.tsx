@@ -9,7 +9,7 @@ import { MatchModal } from "@/components/match-modal";
 import { RecipeModal } from "@/components/recipe-modal";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { useWebSocket } from "@/hooks/useWebSocket";
+import { useWebSocket } from "@/hooks/useWebSocket-simple";
 import { type FoodItem } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 
@@ -52,22 +52,9 @@ export default function Swipe() {
     }
   }, [setLocation]);
 
-  // WebSocket for real-time match notifications
-  const { isConnected, partnerOnline } = useWebSocket({
-    userId: currentUser?.id,
-    sessionId: currentSession?.id,
-    onMatch: (data) => {
-      const foodItems = queryClient.getQueryData(["/api/food-items", currentCategory]) as FoodItem[];
-      const item = foodItems?.find((item: FoodItem) => item.id.toString() === data.mealId);
-      if (item) {
-        setMatchedItem(item);
-        setShowMatchModal(true);
-      }
-    },
-    onPartnerSwipe: (data) => {
-      console.log("Partner swiped:", data);
-    }
-  });
+  // Simplified connection status for now
+  const isConnected = true;
+  const partnerOnline = true;
 
   // Fetch food items
   const { data: foodItems = [], isLoading } = useQuery({
@@ -103,7 +90,34 @@ export default function Swipe() {
       if (!response.ok) throw new Error("Failed to record swipe");
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: async (data, variables) => {
+      // Check for matches immediately after a positive swipe
+      if (variables.liked && currentUser && currentSession) {
+        try {
+          const room = `session_${currentSession.id}`;
+          const matchResponse = await fetch(`/matches/${room}/user${currentUser.id}`);
+          if (matchResponse.ok) {
+            const matchData = await matchResponse.json();
+            if (matchData.mealIds && matchData.mealIds.length > 0) {
+              // Check if this food item is in the matches
+              const foodItemIdStr = variables.foodItemId.toString();
+              if (matchData.mealIds.includes(foodItemIdStr)) {
+                const item = foodItems.find((item: FoodItem) => item.id === variables.foodItemId);
+                if (item) {
+                  setMatchedItem(item);
+                  setShowMatchModal(true);
+                  toast({
+                    title: "It's a Match!",
+                    description: "You both loved this option!",
+                  });
+                }
+              }
+            }
+          }
+        } catch (error) {
+          console.log('Match check failed:', error);
+        }
+      }
       queryClient.invalidateQueries({ queryKey: ["/api/matches"] });
     },
   });
