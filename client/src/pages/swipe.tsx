@@ -1,13 +1,15 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, X, Heart, Info, Sliders } from "lucide-react";
+import { ArrowLeft, X, Heart, Info, Users, Wifi, WifiOff, Sliders } from "lucide-react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useSwipeContext } from "@/lib/swipe-context";
 import { SwipeCard } from "@/components/swipe-card";
 import { MatchModal } from "@/components/match-modal";
 import { RecipeModal } from "@/components/recipe-modal";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { useWebSocket } from "@/hooks/useWebSocket";
 import { apiRequest } from "@/lib/queryClient";
 import { type FoodItem } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
@@ -17,21 +19,58 @@ export default function Swipe() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
-  const { 
-    currentCategory, 
-    activeFilters, 
-    currentSession, 
-    setCurrentSession,
-    currentUser,
-    partner 
-  } = useSwipeContext();
+  // Get user data from localStorage
+  const [currentUser, setCurrentUser] = useState(null);
+  const [partner, setPartner] = useState(null);
+  const [currentSession, setCurrentSession] = useState(null);
+  const [currentCategory, setCurrentCategory] = useState("cooking");
 
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [showMatchModal, setShowMatchModal] = useState(false);
   const [showRecipeModal, setShowRecipeModal] = useState(false);
-  const [matchedItem, setMatchedItem] = useState<FoodItem | null>(null);
   const [selectedItem, setSelectedItem] = useState<FoodItem | null>(null);
+  const [matchedItem, setMatchedItem] = useState<FoodItem | null>(null);
   const [userSwipes, setUserSwipes] = useState<number[]>([]);
+  const [activeFilters] = useState<string[]>([]);
+
+  // Load user data from localStorage
+  useEffect(() => {
+    const userData = localStorage.getItem("currentUser");
+    const partnerData = localStorage.getItem("partner");
+    const sessionData = localStorage.getItem("currentSession");
+    
+    if (!userData) {
+      setLocation("/login");
+      return;
+    }
+    
+    setCurrentUser(JSON.parse(userData));
+    if (partnerData) setPartner(JSON.parse(partnerData));
+    if (sessionData) {
+      const session = JSON.parse(sessionData);
+      setCurrentSession(session);
+      setCurrentCategory(session.category || "cooking");
+    }
+  }, [setLocation]);
+
+  // WebSocket for real-time match notifications
+  const { isConnected, partnerOnline, sendSwipe } = useWebSocket({
+    userId: currentUser?.id,
+    sessionId: currentSession?.id,
+    onMatch: (data) => {
+      // Find the matched food item and show match modal
+      const foodItems = queryClient.getQueryData(["/api/food-items", currentCategory]) as FoodItem[];
+      const item = foodItems?.find((item: FoodItem) => item.id.toString() === data.mealId);
+      if (item) {
+        setMatchedItem(item);
+        setShowMatchModal(true);
+      }
+    },
+    onPartnerSwipe: (data) => {
+      // Could show partner's swipe activity here
+      console.log("Partner swiped:", data);
+    }
+  });
 
   // Fetch food items
   const { data: foodItems = [], isLoading } = useQuery({

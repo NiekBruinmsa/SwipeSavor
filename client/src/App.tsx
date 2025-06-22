@@ -7,7 +7,7 @@ import Login from "@/pages/login";
 import JoinSession from "@/pages/join-session";
 import Onboarding from "@/pages/onboarding";
 import Categories from "@/pages/categories";
-import Swipe from "@/pages/swipe";
+import Swipe from "@/pages/swipe-fixed";
 import NotFound from "@/pages/not-found";
 
 function Router() {
